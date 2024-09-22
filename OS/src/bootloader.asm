@@ -1,51 +1,21 @@
-org 0x7c00
-bits 16
+org 0x7C00         
 
-%define ENDL 0x0D, 0x0A
-
+section .text
 start:
-    jmp main
+    mov ah, 0x0E   
+    mov si, msg    
 
-; prints  a string
-puts:
-    push si
-    push ax
+print_loop:
+    lodsb           ; Load byte at DS:SI into AL and increment SI
+    or al, al      ; Check if we reached the null terminator
+    jz done         ; If zero, we are done
+    int 0x10       ; Call BIOS to print character in AL
+    jmp print_loop  ; Repeat
 
-.loop:
-    lodsb ; loads nextchar in al
-    or al, al ; verify if next char is null
-    jz .done
-    mov ah, 0x0E
-    mov bh, 0 
-    int 0x10
-    jmp .loop
+done:
+    jmp done        ; Infinite loop
 
-.done:
-    pop ax
-    pop si
-    ret
+msg db 'Hello, World!', 0  ; Null-terminated string
 
-main:
-    ; setup segments
-    mov ax, 0 ; can't write to ds/es
-    mov ds, ax
-    mov es, ax
-    
-
-    ; setup stack
-    mov ss, ax
-    mov sp, 0x7C00
-
-    ; print message
-    mov si, msg_hello
-    call puts
-
-    jmp halt
-
-halt:
-    jmp halt
-
-msg_hello: db "testtest", ENDL,0
-
-times 510-($-$$) db 0
-dw 0xAA55
+times 510 - ($ - $$) db 0  ; Fill the rest of the sector with zeros
+dw 0xAA55                  ; Boot signature
